@@ -1,0 +1,105 @@
+# Deploying Your Flask App on Cloud Run: A Journey from Code to Cloud
+
+Building a personal website is a rewarding experience, especially when it involves deploying a Flask application to the cloud. In this article, I'll walk you through the steps I took to deploy my Flask app using Google Cloud's Cloud Run. I'll share what went right, what went wrong, and some tips to make your deployment smoother.
+
+## Setting the Stage: The Flask Application
+
+Before diving into the Dockerfile, let's quickly introduce the Flask application folder and its structure. Here's a typical layout of my Flask app:
+
+```
+my_flask_app/
+│
+├── app.py
+├── requirements.txt
+├── templates/
+│   └── index.html
+├── static/
+│   ├── css/
+│   ├── img/
+│   ├── js/
+│   └── pdf_files/
+├── Dockerfile
+└── .dockerignore
+```
+
+### Breaking Down the Structure
+
+- **app.py:** The main Flask application file where the routes and logic are defined.
+- **requirements.txt:** Lists the dependencies required for the application.
+- **templates/**: Contains HTML templates for the application.
+- **static/**: Contains static files like CSS, JavaScript, images, and PDFs. The subfolders include:
+  - **css/**: Stylesheets for the website.
+  - **img/**: Images used in the website.
+  - **js/**: JavaScript files for added functionality.
+  - **pdf_files/**: PDFs that are available for download or viewing.
+
+## Why Containerize Your Application?
+
+Containerizing your application means packaging it along with all its dependencies, configurations, and libraries into a single, consistent unit. This approach offers several benefits:
+
+1. **Portability:** Containers ensure that your application runs the same way, regardless of the environment. Whether you deploy it on your local machine, a staging server, or a production environment, the containerized application behaves consistently.
+2. **Isolation:** Each container operates independently of other containers, avoiding conflicts between different applications' dependencies.
+3. **Scalability:** Containers can be easily scaled up or down based on demand, allowing for efficient resource utilization.
+4. **Simplified Deployment:** Containers encapsulate everything your application needs to run, simplifying the deployment process and reducing the "it works on my machine" problem.
+
+With these benefits in mind, let's move on to creating the Dockerfile, which is essential for containerizing your application.
+
+## Creating the Dockerfile
+
+The Dockerfile is a crucial part of containerizing your application. Here's what my Dockerfile looks like:
+
+```dockerfile
+FROM python:3
+ENV PYTHONUNBUFFERED True
+ENV APP_HOME /app
+WORKDIR $APP_HOME
+COPY . ./
+RUN pip install -r requirements.txt
+RUN pip install Flask gunicorn
+CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 app:app
+```
+
+### Breaking Down the Dockerfile
+
+- **Base Image:** We start with the official Python 3 image.
+- **Environment Variable:** Setting `PYTHONUNBUFFERED` to `True` ensures that logs appear immediately.
+- **Working Directory:** We set the working directory to `/app` and copy all local files into the container.
+- **Dependencies:** We install the necessary dependencies listed in `requirements.txt` along with Flask and gunicorn.
+- **Running the App:** The last line is the command that runs our Flask app using gunicorn.
+
+### The Gunicorn Gotcha
+
+Initially, I omitted the gunicorn line. Without it, my deployment failed. The absence of this line meant that my Flask app was not properly served in a production environment. This led to deployment errors and a lot of head-scratching. Adding gunicorn, a robust WSGI server for Python applications, is crucial because it handles multiple requests simultaneously, making it ideal for production.
+
+## Pushing to GitHub
+
+With my Dockerfile set up, I pushed my changes to my private GitHub repository. This step ensures that my code is safely stored and can be easily accessed for deployment.
+
+## Deploying on Cloud Run
+
+Now, the fun part begins—deploying to Cloud Run. Here’s how I did it:
+
+### Step-by-Step Deployment
+
+1. **Create a Cloud Run Project:** I logged into my GCP account and created a new Cloud Run project.
+2. **Open Cloud Shell:** I clicked on the Cloud Shell button to open a terminal. Cloud Shell is great because it feels just like a Linux terminal.
+3. **Clone the Repository:** In the terminal, I cloned my GitHub repository and navigated to the right branch.
+4. **Deploying the App:**
+   - I clicked on "Cloud Code" at the bottom and then "Deploy to Cloud Run."
+   - After a short wait, a window appeared where I created a new service, named it, and selected a region. Initially, I chose `europe-west9 (Paris)`, but I couldn't deploy with my own domain for reasons still unknown to me. So, I switched to `europe-west1 (Belgium)`.
+   - I selected "allow unauthenticated invocations" to make my website accessible to everyone and left other settings as default.
+   - After clicking "deploy," it took about 3-5 minutes for the deployment to complete.
+
+### The Domain Dilemma
+
+Choosing the right region can be tricky. In my case, the `europe-west9 (Paris)` region didn't allow me to use my custom domain. Switching to `europe-west1 (Belgium)` resolved this issue. The reasons can be complex and sometimes related to regional support for certain features, so if you encounter similar issues, consider changing your region.
+
+## Custom Domain and CI/CD
+
+Once deployed, I customized my site with my own domain and set up continuous integration/continuous deployment (CI/CD). This setup allows my website to update automatically whenever I push new changes to GitHub. However, since this article focuses on deployment, I'll delve into CI/CD in a future article.
+
+## Conclusion
+
+Deploying a Flask app on Cloud Run involves several steps, but the process is straightforward once you get the hang of it. Remember to configure your Dockerfile correctly and choose the right region for your deployment. With these tips, you'll have your Flask app running in the cloud in no time. Happy deploying!
+
+Stay tuned for more articles where I'll dive deeper into CI/CD and other exciting topics related to web development and cloud deployment.

@@ -31,8 +31,6 @@ def home():
     age = calculate_age()
     return render_template('index.html', my_age=age)
 
-
-
 @app.route("/blog")
 def get_blog():
     return render_template("blog.html", list_of_articles = LIST_OF_ROUTES)
@@ -71,15 +69,18 @@ def get_in_touch():
         
     return render_template("contact.html")
 
-for route in LIST_OF_ROUTES:
-    @app.route("/blog"+route)
+def make_blog_article(route, article_html):
     def blog_article():
-        for i in range(len(LIST_OF_ARTICLES_HTML)):
-            file_path = os.path.join(BLOG_DIR, LIST_OF_ARTICLES_HTML[i])
-            creation_date = os.path.getctime(file_path)
-            creation_date = time.strftime('%B %Y', time.localtime(creation_date))
-            return render_template("blog/"+LIST_OF_ARTICLES_HTML[i], article_title = LIST_OF_ARTICLES_HTML[i][:-5].replace("_", " ").title(), pub_date = creation_date)
+        file_path = os.path.join(BLOG_DIR, article_html)
+        creation_date = os.path.getctime(file_path)
+        creation_date = time.strftime('%B %Y', time.localtime(creation_date))
+        return render_template("blog/" + article_html, 
+                               article_title=article_html[:-5].replace("_", " ").title(), 
+                               pub_date=creation_date)
+    blog_article.__name__ = f"blog_article_{route.strip('/')}"  # unique function name
+    return blog_article
 
- 
+for route, article_html in zip(LIST_OF_ROUTES, LIST_OF_ARTICLES_HTML):
+    app.route("/blog" + route)(make_blog_article(route, article_html))
 if __name__=="__main__":
     app.run(debug=True)
